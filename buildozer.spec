@@ -16,7 +16,7 @@ package.domain = org.suxiscanner
 
 # (str) Source code where the main.py live
 source.dir = .
-source.include_exts=py,png,jpg,kv,atlas,yar,txt
+＃source.include_exts=py,png,jpg,kv,atlas,yar,txt
 # (list) Source files to include (leave empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas,yar,txt
 requirements = python3,kivy
