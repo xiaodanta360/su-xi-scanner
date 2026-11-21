@@ -1,6 +1,9 @@
 import os
 import hashlib
-import yara
+try:
+    import yara
+except ImportError:
+    yara = None
 
 # -------------------------- 配置区 --------------------------
 RULE_PATH = "rules.yar"
