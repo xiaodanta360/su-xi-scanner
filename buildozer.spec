@@ -6,20 +6,20 @@
 [app]
 
 # (str) Title of your application
-title = 我的简易杀毒
+title = 苏西扫描仪
 
 # (str) Package name
-package.name = myav
+package.name = suxiscanner
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.myav
+package.domain = org.suxiscanner
 
 # (str) Source code where the main.py live
 source.dir = .
-
+source.include_exts=py,png,jpg,kv,atlas,yar,txt
 # (list) Source files to include (leave empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas,yar,txt
-requirements = python3,kivy,yara-python
+requirements = python3,kivy
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
 source.include_data = rules.yar
 
@@ -45,7 +45,6 @@ version = 0.2
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-#requirements = python3,kivy,yara-python
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
