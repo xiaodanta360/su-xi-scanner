@@ -1,0 +1,7 @@
+SCAN: ./main.py
+SCAN: ./buildozer.spec
+SCAN: ./scan.py
+SCAN: ./rules.yar
+SCAN: ./.gitignore
+SCAN: ./scan_log.txt
+SCAN: ./.github/workflows/build.yml
