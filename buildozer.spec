@@ -5,6 +5,9 @@
 
 [app]
 
+# 编码兜底
+android.extra_env = PYTHONIOENCODING=utf-8
+
 # (str) Title of your application
 title = 苏西扫描仪
 
