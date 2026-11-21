@@ -1,4 +1,5 @@
 name: Build APK
+
 on:
   push:
     branches: [ main ]
@@ -10,29 +11,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install system dependencies
         run: |
-          sudo apt update
-          sudo apt install -y build-essential git libssl-dev openjdk-17-jdk zip unzip autoconf libtool pkg-config zlib1g-dev libffi-dev cmake
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip patchelf autoconf automake libtool \
+            pkg-config cmake ninja-build ccache \
+            openjdk-17-jdk \
+            zlib1g-dev libssl-dev libffi-dev \
+            libjpeg-dev libpng-dev libfreetype-dev
 
       - name: Install python packages
         run: |
-          pip install --upgrade pip setuptools wheel cython buildozer
+          python -m pip install --upgrade pip
+          pip install buildozer cython==0.29.36
 
       - name: Build APK
-        env:
-          ACCEPT_SHARED_SDK_LICENSE: 1
         run: |
-          yes | buildozer android debug
+          set +e
+          yes | buildozer android debug > build.log 2>&1
+          code=$?
+          echo "===== 退出码: $code ====="
+          echo "===== 错误信息 ====="
+          grep -n -i -E "error:|Error|Killed|No such file|failed|Traceback|undefined reference" build.log | tail -40
+          echo "===== 最后 60 行 ====="
+          tail -60 build.log
+          exit $code
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: myav-apk
+          name: app-debug
           path: bin/*.apk
-
