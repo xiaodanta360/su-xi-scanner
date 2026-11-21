@@ -19,9 +19,9 @@ package.domain = org.suxiscanner
 
 # (str) Source code where the main.py live
 source.dir = .
-＃source.include_exts=py,png,jpg,kv,atlas,yar,txt
 # (list) Source files to include (leave empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas,yar,txt
+
 requirements = python3,kivy
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
 source.include_data = rules.yar
@@ -37,7 +37,7 @@ source.exclude_dirs = .git,.github,quarantine,bin,.buildozer
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
-source.exclude_patterns = *.pyc,*.bak,.gitignore
+source.exclude_patterns = *.pyc,*.bak,*.txt,*.spec*,.gitignore
 
 # (str) Application versioning (method 1)
 version = 0.2
