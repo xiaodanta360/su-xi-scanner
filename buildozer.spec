@@ -19,7 +19,7 @@ source.dir = .
 ＃source.include_exts=py,png,jpg,kv,atlas,yar,txt
 # (list) Source files to include (leave empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas,yar,txt
-requirements = python3,kivy
+requirements = python3,kivy,charset-normalizer==3.4.1
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
 source.include_data = rules.yar
 
