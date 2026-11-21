@@ -10,7 +10,11 @@ from kivy.core.window import Window
 from kivy.metrics import dp
 
 import os
-import yara
+try:
+    import yara
+except ImportError:
+    yara = None
+
 
 
 class ScannerApp(App):
