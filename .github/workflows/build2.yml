@@ -1,0 +1,45 @@
+name: Build APK v2
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip patchelf autoconf automake libtool pkg-config cmake ninja-build ccache \
+            openjdk-17-jdk \
+            libz-dev libssl-dev libffi-dev libjpeg-dev libpng-dev libfreetype-dev
+
+      - name: Install python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer cython==0.29.36
+
+      - name: Build APK
+        run: |
+          set +e
+          yes | buildozer -v android debug > build.log 2>&1
+          code=$?
+          echo "===== 退出码: $code ====="
+          echo "===== 最后 150 行日志 ====="
+          tail -150 build.log
+          exit $code
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: bin/*.apk
