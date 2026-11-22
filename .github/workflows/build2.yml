@@ -18,9 +18,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip patchelf autoconf automake libtool pkg-config cmake ninja-build ccache \
+          sudo apt-get install -y git zip unzip \
             openjdk-17-jdk \
-            libz-dev libssl-dev libffi-dev libjpeg-dev libpng-dev libfreetype-dev
+            libz-dev libssl-dev libffi-dev \
+            autoconf automake libtool cmake pkg-config \
+            ninja-build ccache
 
       - name: Install python packages
         run: |
@@ -33,9 +35,18 @@ jobs:
           yes | buildozer -v android debug > build.log 2>&1
           code=$?
           echo "===== 退出码: $code ====="
-          echo "===== 最后 150 行日志 ====="
-          tail -150 build.log
+          echo "===== Gradle 错误详情 ====="
+          grep -n -B 3 -A 40 -i "FAILURE:\|What went wrong\|Caused by:\|Execution failed for task" build.log | head -150
+          echo "===== 最后 60 行 ====="
+          tail -60 build.log
           exit $code
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Upload APK
         if: success()
