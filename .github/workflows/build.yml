@@ -33,7 +33,8 @@ jobs:
       - name: Build APK
         run: |
           set +e
-          yes | buildozer android debug > build.log 2>&1
+          yes | buildozer android debug --allow-minsdk-ndkapi-mismatch
+
           code=$?
           echo "===== 退出码: $code ====="
           echo "===== 错误信息 ====="
