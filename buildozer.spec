@@ -25,7 +25,6 @@ source.include_exts = py,png,jpg,kv,atlas,yar,txt
 requirements = python3,kivy
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
 source.include_data = rules.yar
-android.ndk_version = 25.2.9519653
 
 # (list) List of inclusions using pattern matching
 #source.include_patterns = assets/*,images/*.png
@@ -116,7 +115,8 @@ fullscreen = 0
 
 # (int) Target Android API, should be as high as possible.
 android.api = 33
-android.ndk_version = 25b
+android.ndk_version = 25.2.9519653
+
 android.ndk_api = 21
 
 # (int) Minimum API your APK / AAB will support.
