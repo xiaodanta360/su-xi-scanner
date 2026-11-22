@@ -31,7 +31,10 @@ jobs:
           pip install buildozer cython==0.29.36
 
       - name: Build APK
-        run: |
+      env:
+        MAKEFLAGS: "-j1"
+
+       run: |
           set +e
           yes | buildozer android debug --allow-minsdk-ndkapi-mismatch
 
