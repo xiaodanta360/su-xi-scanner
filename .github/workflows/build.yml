@@ -23,46 +23,128 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
             git zip unzip patchelf autoconf automake libtool \
             pkg-config cmake ninja-build ccache \
             openjdk-17-jdk \
             zlib1g-dev libssl-dev libffi-dev \
             libjpeg-dev libpng-dev libfreetype-dev \
-            libncurses5
+            libncurses5 || echo "⚠️ 部分依赖安装失败，继续尝试"
+          echo "系统依赖安装完成"
 
       - name: Install python packages
         run: |
-          python -m pip install --upgrade pip
-          pip install buildozer cython==0.29.36
+          python -m pip install --upgrade pip -q
+          pip install buildozer cython==0.29.36 -q
+          echo "Python 包安装完成"
 
-      - name: Build APK
-        env:
-          MAKEFLAGS: "-j1"
-          JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
+      - name: Show spec config
         run: |
-          set +e
-          yes | buildozer android debug --allow-minsdk-ndkapi-mismatch 2>&1 | tee build.log
-          code=${PIPESTATUS[0]}
+          echo "=== buildozer.spec 关键配置 ==="
+          if [ -f buildozer.spec ]; then
+            grep -E "^(title|package|version|requirements|android.api|android.minapi|android.ndk|android.ndk_api|android.arch|android.ndk_module|p4a.branch|android.gradle_dependencies|android.permissions|source.dir)" buildozer.spec || echo "无匹配配置项"
+          else
+            echo "❌ 未找到 buildozer.spec 文件"
+            ls -la
+          fi
+          echo "=================="
 
-          echo ""
-          echo "===== 退出码: $code ====="
-
-          if [ "$code" -ne 0 ]; then
-            echo "===== 关键错误行 ====="
-            grep -n -i -E "error:|FAILURE|What went wrong|Killed|No such file|failed|Traceback|undefined reference|Could not" build.log | tail -60
-            echo ""
-            echo "===== 最后 120 行 ====="
-            tail -120 build.log
+      - name: Pin python-for-android version
+        run: |
+          if [ -f buildozer.spec ]; then
+            if grep -q "^p4a.branch" buildozer.spec; then
+              sed -i 's/^p4a.branch.*/p4a.branch = v64/' buildozer.spec
+            else
+              echo "" >> buildozer.spec
+              echo "p4a.branch = v64" >> buildozer.spec
+            fi
+            echo "p4a.branch 已设置为:"
+            grep "^p4a.branch" buildozer.spec
+          else
+            echo "无 spec 文件，跳过"
           fi
 
+      - name: Configure Gradle memory
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties << 'EOF'
+org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m
+org.gradle.parallel=false
+org.gradle.daemon=false
+android.useAndroidX=true
+android.enableJetifier=true
+EOF
+          echo "Gradle 内存配置完成 (限制 2GB，防 OOM)"
+
+      - name: Clean previous build
+        run: |
+          rm -rf .buildozer bin build
+          echo "已清理旧构建目录"
+
+      - name: Build APK
+        run: |
+          set +e
+          echo "=== 环境检查 ==="
+          java -version 2>&1 | head -3
+          python --version
+          pip show buildozer 2>/dev/null | head -3
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "CPU 核心: $(nproc)"
+          free -h
+          df -h / | tail -1
+          echo "=================="
+
+          echo "=== 开始构建 ==="
+          yes | buildozer android debug --allow-minsdk-ndkapi-mismatch > full.log 2>&1
+          code=$?
+          echo "BUILD_EXIT_CODE=$code" >> $GITHUB_ENV
+          echo "构建结束，退出码: $code"
+
+          {
+            echo "===== 退出码: $code ====="
+            echo ""
+            echo "===== 日志总行数 ====="
+            wc -l full.log
+            echo ""
+            echo "===== 完整日志最后 250 行 ====="
+            tail -250 full.log
+            echo ""
+            echo "===== 错误关键词命中 ====="
+            grep -n -i -E "error:|FAILURE|What went wrong|Killed|No such file|failed|Traceback|undefined reference|Could not find|Could not resolve|Caused by|not found|OutOfMemory|Cannot find" full.log | tail -50
+            echo ""
+            echo "===== NDK / SDK 相关 ====="
+            grep -n -i -E "ndk|sdk|android-api|gradle" full.log | tail -30
+          } > report.txt
+
+          cat report.txt
           exit $code
+
+      - name: Upload full log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: full.log
+          if-no-files-found: ignore
+
+      - name: Find APK
+        if: always()
+        run: |
+          echo "=== 查找 APK ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "未找到任何 APK"
+          echo "=== bin 目录 ==="
+          ls -la bin/ 2>/dev/null || echo "bin/ 不存在"
+          echo "=== 项目根目录 ==="
+          ls -la
 
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: bin/*.apk
-
+          path: |
+            bin/*.apk
+            */bin/*.apk
+          if-no-files-found: warn
