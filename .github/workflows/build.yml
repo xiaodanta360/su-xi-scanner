@@ -15,6 +15,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -23,7 +29,8 @@ jobs:
             pkg-config cmake ninja-build ccache \
             openjdk-17-jdk \
             zlib1g-dev libssl-dev libffi-dev \
-            libjpeg-dev libpng-dev libfreetype-dev
+            libjpeg-dev libpng-dev libfreetype-dev \
+            libncurses5
 
       - name: Install python packages
         run: |
@@ -31,19 +38,25 @@ jobs:
           pip install buildozer cython==0.29.36
 
       - name: Build APK
-      env:
-        MAKEFLAGS: "-j1"
-
-       run: |
+        env:
+          MAKEFLAGS: "-j1"
+          JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
+        run: |
           set +e
-          yes | buildozer android debug --allow-minsdk-ndkapi-mismatch
+          yes | buildozer android debug --allow-minsdk-ndkapi-mismatch 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
 
-          code=$?
+          echo ""
           echo "===== 退出码: $code ====="
-          echo "===== 错误信息 ====="
-          grep -n -i -E "error:|Error|Killed|No such file|failed|Traceback|undefined reference" build.log | tail -40
-          echo "===== 最后 60 行 ====="
-          tail -60 build.log
+
+          if [ "$code" -ne 0 ]; then
+            echo "===== 关键错误行 ====="
+            grep -n -i -E "error:|FAILURE|What went wrong|Killed|No such file|failed|Traceback|undefined reference|Could not" build.log | tail -60
+            echo ""
+            echo "===== 最后 120 行 ====="
+            tail -120 build.log
+          fi
+
           exit $code
 
       - name: Upload APK
@@ -52,3 +65,4 @@ jobs:
         with:
           name: app-debug
           path: bin/*.apk
+
