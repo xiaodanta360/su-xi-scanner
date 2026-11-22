@@ -1,5 +1,6 @@
 import os
 import hashlib
+import sys
 try:
     import yara
 except ImportError:
@@ -8,7 +9,6 @@ except ImportError:
 # -------------------------- 配置区 --------------------------
 RULE_PATH = "rules.yar"
 QUARANTINE_DIR = "quarantine"
-SKIP_DIRS = {".git", QUARANTINE_DIR, "__pycache__"}
 # 测试MD5黑名单
 MD5_BLACKLIST = {
     "44d88612fea8a8f36de82e1278abb02": "EICAR测试文件"
@@ -16,16 +16,28 @@ MD5_BLACKLIST = {
 LOG_FILE = "scan_log.txt"
 # -----------------------------------------------------------
 
-if not os.path.exists(QUARANTINE_DIR):
-    os.mkdir(QUARANTINE_DIR)
+# 隔离目录（Android 下使用应用私有目录）
+if hasattr(sys, "getandroidapilevel"):
+    QUARANTINE_DIR = os.path.join(os.environ.get("HOME", "/data/data"), "quarantine")
+else:
+    QUARANTINE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quarantine")
+SKIP_DIRS = {".git", QUARANTINE_DIR, "__pycache__"}
+
+try:
+    os.makedirs(QUARANTINE_DIR, exist_ok=True)
+except Exception as e:
+    print(f"⚠️ 隔离目录创建失败: {e}")
 
 # 加载YARA规则
-try:
-    rules = yara.compile(filepath=RULE_PATH)
-    print("✅ YARA规则加载成功")
-except Exception as e:
-    print(f"❌ YARA加载失败: {e}")
-    exit(1)
+rules = None
+if yara is not None:
+    try:
+        rules = yara.compile(filepath=RULE_PATH)
+        print("✅ YARA规则加载成功")
+    except Exception as e:
+        print(f"⚠️ YARA加载失败: {e}")
+else:
+    print("⚠️ yara 未安装，跳过 YARA 扫描")
 
 def get_md5(file_path):
     try:
@@ -65,16 +77,18 @@ def scan_path(root_path):
                     opt = input("是否隔离该文件？(y/n): ")
                     if opt.strip().lower() == "y":
                         quarantine_file(fp)
-                # YARA检测
-                matches = rules.match(fp)
-                if matches:
-                    for m in matches:
-                        msg = f"⚠️ YARA规则命中: {m.rule}"
-                        print(msg)
-                        logf.write(msg+"\n")
-                        opt = input("是否隔离该文件？(y/n): ")
-                        if opt.strip().lower() == "y":
-                            quarantine_file(fp)
+                                        # YARA检测
+                if rules is not None:
+                    matches = rules.match(fp)
+                    if matches:
+                        for m in matches:
+                            msg = f"⚠️ {fp} 命中YARA规则: {m.rule}"
+                            print(msg)
+                            logf.write(msg + "\n")
+                            opt = input("是否隔离? (y/n): ")
+                            if opt.strip().lower() == "y":
+                                quarantine_file(fp)
+
     print("\n✅ 扫描结束")
 
 if __name__ == "__main__":
