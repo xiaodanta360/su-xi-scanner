@@ -119,7 +119,7 @@ android.ndk_version = 25b
 android.ndk_api = 21
 
 # (int) Minimum API your APK / AAB will support.
-android.minapi = 24
+android.minapi = 21
 
 # (int) Android SDK version to use
 #android.sdk = 20
